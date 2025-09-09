@@ -15,17 +15,21 @@ override_dh_auto_clean:
 	dh_auto_clean
 	rm -rf build/
 	rm -rf __pycache__/
+	# Don't remove tapo-$(TAPO_VERSION)/ during clean to preserve sources
+	# Only remove on distclean
+	find . -name "*.pyc" -delete
+
+distclean: clean
 	rm -rf tapo-$(TAPO_VERSION)/
 	rm -f tapo-*.whl
-	find . -name "*.pyc" -delete
 
 override_dh_auto_configure:
 	# Download and extract wheel if not already present
 	if [ ! -d "tapo-$(TAPO_VERSION)" ]; then \
 		echo "Downloading tapo wheel from PyPI..."; \
-		python3 -m pip download --no-deps --only-binary=:all: tapo==$(TAPO_VERSION) || true; \
+		python3 -m pip download --no-deps --only-binary=:all: tapo==$(TAPO_VERSION); \
 		echo "Extracting wheel contents..."; \
-		python3 -m wheel unpack tapo-$(TAPO_VERSION)-*.whl || true; \
+		python3 -m wheel unpack tapo-$(TAPO_VERSION)-*.whl; \
 		echo "Wheel extracted successfully"; \
 	fi
 
@@ -35,6 +39,8 @@ override_dh_auto_build:
 override_dh_auto_install:
 	# Install from the extracted wheel contents
 	@echo "Installing tapo from extracted wheel..."
+	@echo "Looking for tapo directory..."
+	@ls -la tapo-$(TAPO_VERSION)/ || echo "Directory not found!"
 	set -ex; \
 	for python in $(PYTHON3); do \
 		python_version=$$($$python -c "import sys; print('%d.%d' % sys.version_info[:2])"); \
