@@ -52,7 +52,7 @@ distributions.each {
             stage('Update Sources ' + distribution) {
                 buildImage.inside {
                     sh 'sudo apt-get update --allow-releaseinfo-change'
-                    sh 'sudo apt-get install -y python3-pip python3-wheel curl jq'
+                    sh 'sudo apt-get install -y python3-pip python3-wheel python3-setuptools curl jq wheel'
                     
                     // Get current version from PyPI
                     UPSTREAM_VERSION = sh(
@@ -66,7 +66,7 @@ distributions.each {
                     echo "Debian package version will be: ${DEBIAN_VERSION}"
                     
                     // Download and extract wheel
-                    sh '''
+                    sh """
                         echo "Downloading tapo wheel from PyPI..."
                         rm -rf tapo-* *.whl
                         python3 -m pip download --no-deps --only-binary=:all: tapo==${UPSTREAM_VERSION}
@@ -74,20 +74,20 @@ distributions.each {
                         echo "Extracting wheel contents..."
                         python3 -m wheel unpack tapo-${UPSTREAM_VERSION}-*.whl
                         ls -la tapo-${UPSTREAM_VERSION}/
-                    '''.stripIndent()
+                    """.stripIndent()
                     
                     // Update debian/changelog
-                    sh '''
+                    sh """
                         echo "Updating debian/changelog with version ${DEBIAN_VERSION}..."
                         cat > debian/changelog.new << EOF
 python3-tapo (${DEBIAN_VERSION}) unstable; urgency=medium
 
   * Automated build for upstream version ${UPSTREAM_VERSION}
   * Downloaded from PyPI: https://pypi.org/project/tapo/${UPSTREAM_VERSION}/
-  * Built on $(date -R)
+  * Built on \$(date -R)
   * Build: ${BUILD_TAG}
 
- -- Vitex Software <info@vitexsoftware.com>  $(date -R)
+ -- Vitex Software <info@vitexsoftware.com>  \$(date -R)
 
 EOF
                         if [ -f debian/changelog ]; then
@@ -95,7 +95,7 @@ EOF
                             tail -n +2 debian/changelog >> debian/changelog.new
                         fi
                         mv debian/changelog.new debian/changelog
-                    '''.stripIndent()
+                    """.stripIndent()
                     
                     // Update setup.py with current version
                     sh "sed -i \"s/version='[^']*'/version='${UPSTREAM_VERSION}'/\" setup.py"
