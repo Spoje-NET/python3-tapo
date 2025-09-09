@@ -70,10 +70,28 @@ distributions.each { distro ->
                     sh """
                         echo "Downloading tapo wheel from PyPI..."
                         rm -rf tapo-* *.whl
+                        
+                        # Detect target architecture and map to Python wheel architecture
+                        DEB_HOST_ARCH=\$(dpkg-architecture -qDEB_HOST_ARCH)
+                        case "\$DEB_HOST_ARCH" in
+                            amd64) WHEEL_ARCH="x86_64" ;;
+                            arm64) WHEEL_ARCH="aarch64" ;;
+                            armhf) WHEEL_ARCH="armv7l" ;;
+                            i386) WHEEL_ARCH="i686" ;;
+                            ppc64el) WHEEL_ARCH="ppc64le" ;;
+                            s390x) WHEEL_ARCH="s390x" ;;
+                            *) echo "Unsupported architecture: \$DEB_HOST_ARCH"; exit 1 ;;
+                        esac
+                        echo "Building for architecture: \$DEB_HOST_ARCH (wheel arch: \$WHEEL_ARCH)"
+                        
                         python3 -m pip download --no-deps --only-binary=:all: tapo==${UPSTREAM_VERSION}
                         
                         echo "Extracting wheel contents..."
-                        WHEEL_FILE=\$(ls tapo-${UPSTREAM_VERSION}-*.whl | head -1)
+                        WHEEL_FILE=\$(ls tapo-${UPSTREAM_VERSION}-*\$WHEEL_ARCH*.whl | head -1)
+                        if [ -z "\$WHEEL_FILE" ]; then
+                            echo "No wheel found for architecture \$WHEEL_ARCH, trying any available wheel..."
+                            WHEEL_FILE=\$(ls tapo-${UPSTREAM_VERSION}-*.whl | head -1)
+                        fi
                         echo "Found wheel file: \$WHEEL_FILE"
                         mkdir -p tapo-${UPSTREAM_VERSION}
                         cd tapo-${UPSTREAM_VERSION} && python3 -m zipfile -e "../\$WHEEL_FILE" .
