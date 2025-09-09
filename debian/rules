@@ -3,6 +3,8 @@
 export DH_VERBOSE=1
 export PYBUILD_NAME=tapo
 
+# Package version (will be updated by Jenkins)
+TAPO_VERSION := 0.8.4
 # Python 3 versions
 PYTHON3 := $(shell py3versions -r)
 
@@ -13,24 +15,35 @@ override_dh_auto_clean:
 	dh_auto_clean
 	rm -rf build/
 	rm -rf __pycache__/
+	rm -rf tapo-$(TAPO_VERSION)/
+	rm -f tapo-*.whl
 	find . -name "*.pyc" -delete
 
 override_dh_auto_configure:
-	# No configuration needed for prebuilt wheel
+	# Download and extract wheel if not already present
+	if [ ! -d "tapo-$(TAPO_VERSION)" ]; then \
+		echo "Downloading tapo wheel from PyPI..."; \
+		python3 -m pip download --no-deps --only-binary=:all: tapo==$(TAPO_VERSION) || true; \
+		echo "Extracting wheel contents..."; \
+		python3 -m wheel unpack tapo-$(TAPO_VERSION)-*.whl || true; \
+		echo "Wheel extracted successfully"; \
+	fi
 
 override_dh_auto_build:
 	# No build needed for prebuilt wheel
 
 override_dh_auto_install:
 	# Install from the extracted wheel contents
+	@echo "Installing tapo from extracted wheel..."
 	set -ex; \
 	for python in $(PYTHON3); do \
 		python_version=$$($$python -c "import sys; print('%d.%d' % sys.version_info[:2])"); \
 		site_packages_dir="debian/python3-tapo/usr/lib/python3/dist-packages"; \
 		mkdir -p "$$site_packages_dir"; \
-		cp -r tapo-0.8.4/tapo "$$site_packages_dir/"; \
-		cp -r tapo-0.8.4/tapo-0.8.4.dist-info "$$site_packages_dir/"; \
+		cp -r tapo-$(TAPO_VERSION)/tapo "$$site_packages_dir/"; \
+		cp -r tapo-$(TAPO_VERSION)/tapo-$(TAPO_VERSION).dist-info "$$site_packages_dir/"; \
 	done
+	@echo "Installation completed successfully"
 
 override_dh_auto_test:
 	# Skip tests for prebuilt package

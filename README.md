@@ -29,22 +29,41 @@ Tapo is a Rust-based Python library that provides an API client for controlling 
 - libc6 (>= 2.34)
 - libgcc-s1 (>= 4.2)
 
-## Building the Package
+## Automated CI/CD
 
-To build the Debian package from source:
+This package includes a Jenkins pipeline (`debian/Jenkinsfile`) that:
+
+1. **Automatically detects** the latest version from PyPI
+2. **Downloads** the current wheel from PyPI  
+3. **Updates** `debian/changelog` with the new version
+4. **Updates** `setup.py` with the current version
+5. **Builds** packages for multiple distributions:
+   - Debian Trixie
+   - Debian Forky
+   - Ubuntu Jammy
+   - Ubuntu Noble
+6. **Tests** package installation
+7. **Archives** the built packages
+
+## Manual Building
+
+To build the Debian package manually:
 
 ```bash
 # Install build dependencies
 sudo apt update
-sudo apt install -y debhelper dh-python python3-all python3-setuptools
+sudo apt install -y debhelper dh-python python3-all python3-setuptools python3-pip python3-wheel
 
-# Build the package
+# Build the package (sources will be downloaded automatically)
 dpkg-buildpackage -us -uc -b
 ```
 
-This will create:
-- `python3-tapo_0.8.4-1_amd64.deb` - Main package
-- `python3-tapo-dbgsym_0.8.4-1_amd64.deb` - Debug symbols
+This will:
+1. Download the latest tapo wheel from PyPI
+2. Extract the wheel contents
+3. Create the Debian packages:
+   - `python3-tapo_X.Y.Z-1_amd64.deb` - Main package
+   - `python3-tapo-dbgsym_X.Y.Z-1_amd64.deb` - Debug symbols
 
 ## Installation
 
@@ -81,11 +100,12 @@ print(info)
 - `debian/` - Debian packaging files
   - `control` - Package metadata and dependencies
   - `copyright` - License information
-  - `changelog` - Version history
-  - `rules` - Build rules
+  - `changelog` - Version history (auto-updated by Jenkins)
+  - `rules` - Build rules with dynamic source download
   - `source/format` - Source format specification
-- `setup.py` - Python setup script
-- `tapo-0.8.4/` - Extracted wheel contents
+  - `Jenkinsfile` - Automated CI/CD pipeline
+- `setup.py` - Python setup script (version auto-updated)
+- Source files are downloaded automatically during build
 
 ## Upstream Information
 

@@ -1,0 +1,157 @@
+#!groovy
+
+String[] distributions = ['debian:trixie', 'debian:forky', 'ubuntu:jammy', 'ubuntu:noble']
+
+String vendor = 'vitexsoftware'
+String distribution = ''
+//String distroFamily = ''
+String distroCodename = ''
+String ver = ''
+
+// Package specific variables
+String PYPI_PACKAGE = 'tapo'
+String UPSTREAM_VERSION = ''
+String DEBIAN_VERSION = ''
+
+properties([
+    copyArtifactPermission('*')
+])
+node() {
+    ansiColor('xterm') {
+        stage('SCM Checkout') {
+            checkout scm
+        }
+    }
+}
+
+distributions.each {
+    distribution = it
+
+    println  "Dist:" + distribution
+
+    def dist = distribution.split(':')
+    distroCodename = dist[1]
+
+    def buildImage = ''
+
+    def artifacts = []
+
+    node {
+        ansiColor('xterm') {
+            stage('Checkout ' + distribution) {
+                checkout scm
+                buildImage = docker.image(vendor + '/' + distribution)
+                sh 'git checkout debian/changelog'
+                def version = sh (
+                    script: 'dpkg-parsechangelog --show-field Version',
+                    returnStdout: true
+                ).trim()
+                ver = version + '.' + env.BUILD_NUMBER  + '~' + distroCodename
+            }
+            
+            stage('Update Sources ' + distribution) {
+                buildImage.inside {
+                    sh 'sudo apt-get update --allow-releaseinfo-change'
+                    sh 'sudo apt-get install -y python3-pip python3-wheel curl jq'
+                    
+                    // Get current version from PyPI
+                    UPSTREAM_VERSION = sh(
+                        script: "curl -s https://pypi.org/pypi/${PYPI_PACKAGE}/json | jq -r '.info.version'",
+                        returnStdout: true
+                    ).trim()
+                    
+                    DEBIAN_VERSION = UPSTREAM_VERSION + '-1'
+                    
+                    echo "Found upstream version: ${UPSTREAM_VERSION}"
+                    echo "Debian package version will be: ${DEBIAN_VERSION}"
+                    
+                    // Download and extract wheel
+                    sh '''
+                        echo "Downloading tapo wheel from PyPI..."
+                        rm -rf tapo-* *.whl
+                        python3 -m pip download --no-deps --only-binary=:all: tapo==${UPSTREAM_VERSION}
+                        
+                        echo "Extracting wheel contents..."
+                        python3 -m wheel unpack tapo-${UPSTREAM_VERSION}-*.whl
+                        ls -la tapo-${UPSTREAM_VERSION}/
+                    '''.stripIndent()
+                    
+                    // Update debian/changelog
+                    sh '''
+                        echo "Updating debian/changelog with version ${DEBIAN_VERSION}..."
+                        cat > debian/changelog.new << EOF
+python3-tapo (${DEBIAN_VERSION}) unstable; urgency=medium
+
+  * Automated build for upstream version ${UPSTREAM_VERSION}
+  * Downloaded from PyPI: https://pypi.org/project/tapo/${UPSTREAM_VERSION}/
+  * Built on $(date -R)
+  * Build: ${BUILD_TAG}
+
+ -- Vitex Software <info@vitexsoftware.com>  $(date -R)
+
+EOF
+                        if [ -f debian/changelog ]; then
+                            echo "" >> debian/changelog.new
+                            tail -n +2 debian/changelog >> debian/changelog.new
+                        fi
+                        mv debian/changelog.new debian/changelog
+                    '''.stripIndent()
+                    
+                    // Update setup.py with current version
+                    sh "sed -i \"s/version='[^']*'/version='${UPSTREAM_VERSION}'/\" setup.py"
+                    
+                    // Update rules file with current version
+                    sh "sed -i \"s/TAPO_VERSION := [0-9.]\\+/TAPO_VERSION := ${UPSTREAM_VERSION}/\" debian/rules || echo 'Rules file update skipped'"
+                    
+                    // Update version for the build process
+                    def newVersion = sh(
+                        script: 'dpkg-parsechangelog --show-field Version',
+                        returnStdout: true
+                    ).trim()
+                    ver = newVersion + '.' + env.BUILD_NUMBER + '~' + distroCodename
+                    
+                    echo "Updated package version to ${ver}"
+                }
+            }
+            stage('Build ' + distribution) {
+                buildImage.inside {
+                    sh 'dch -b -v ' + ver  + ' "' + env.BUILD_TAG  + '"'
+                    sh 'sudo apt-get update --allow-releaseinfo-change'
+                    sh 'sudo chown jenkins:jenkins ..'
+                    sh 'debuild-pbuilder  -i -us -uc -b'
+                    sh 'mkdir -p $WORKSPACE/dist/debian/ ; rm -rf $WORKSPACE/dist/debian/* ; for deb in $(cat debian/files | awk \'{print $1}\'); do mv "../$deb" $WORKSPACE/dist/debian/; done'
+                    artifacts = sh (
+                        script: "cat debian/files | awk '{print \$1}'",
+                        returnStdout: true
+                    ).trim().split('\n')
+                }
+            }
+
+            stage('Test ' + distribution) {
+                buildImage.inside {
+                    def debconf_debug = 0 //Set to "5" or "developer" to debug debconf
+                    sh 'cd $WORKSPACE/dist/debian/ ; dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz; cd $WORKSPACE'
+                    sh 'echo "deb [trusted=yes] file://///$WORKSPACE/dist/debian/ ./" | sudo tee /etc/apt/sources.list.d/local.list'
+                    sh 'sudo apt-get update --allow-releaseinfo-change'
+                    sh 'echo "INSTALATION"'
+                    artifacts.each { deb_file ->
+                        if (deb_file.endsWith('.deb')) {
+                            sh 'echo -e "${GREEN} installing ' + deb_file + ' on `lsb_release -sc` ${ENDCOLOR} "'
+                            sh 'sudo DEBIAN_FRONTEND=noninteractive DEBCONF_DEBUG=' + debconf_debug + ' apt-get -y install $WORKSPACE/dist/debian/' + deb_file
+                        }
+                    }
+                }
+            }
+            stage('Copy artifacts ' + distribution ) {
+                buildImage.inside {
+                    artifacts.each { deb_file ->
+                        println "Copying artifact: " + deb_file
+                        archiveArtifacts artifacts: 'dist/debian/' + deb_file
+                        sh 'cp $WORKSPACE/dist/debian/' + deb_file + ' $WORKSPACE'
+                    }
+                }
+            }
+        }
+    }
+}
+
