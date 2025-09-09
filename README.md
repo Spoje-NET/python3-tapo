@@ -67,7 +67,47 @@ This will:
 
 ## Installation
 
-Install the generated package:
+### From Vitex Software Repository (Recommended)
+
+The easiest way to install this package is from the Vitex Software APT repository:
+
+```bash
+# Import the GPG key
+sudo curl -fsSL http://repo.vitexsoftware.com/KEY.gpg \
+  -o /usr/share/keyrings/multiflexi-archive-keyring.gpg
+
+# Add the repository (replace [distro] with your distribution codename)
+# For example: bookworm, trixie, jammy, noble
+echo "deb [signed-by=/usr/share/keyrings/multiflexi-archive-keyring.gpg] http://repo.vitexsoftware.com/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/vitexsoftware.list
+
+# Update package lists and install
+sudo apt update
+sudo apt install python3-tapo
+```
+
+**Alternative using modern DEB822 format:**
+
+Create `/etc/apt/sources.list.d/vitexsoftware.sources` with:
+
+```
+Types: deb
+URIs: http://repo.vitexsoftware.com/
+Suites: [distro]
+Components: main
+Signed-By: /usr/share/keyrings/multiflexi-archive-keyring.gpg
+```
+
+*Replace `[distro]` with your distribution codename (e.g., `bookworm`, `trixie`, `jammy`, `noble`)*
+
+This method provides:
+- **Automatic updates** when new versions are released
+- **Dependency resolution** handled by APT
+- **GPG signature verification** for security
+- **Multi-architecture support** (amd64, arm64, armhf, i386, etc.)
+
+### From Downloaded Package
+
+Alternatively, install a manually downloaded package:
 
 ```bash
 sudo dpkg -i python3-tapo_0.8.4-1_amd64.deb
