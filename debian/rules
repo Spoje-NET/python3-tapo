@@ -27,7 +27,7 @@ override_dh_auto_configure:
 	# Download and extract wheel if not already present
 	if [ ! -d "tapo-$(TAPO_VERSION)" ]; then \
 		echo "Downloading tapo wheel from PyPI..."; \
-		# Detect target architecture and map to Python wheel architecture
+		# Detect target architecture and map to Python wheel architecture; \
 		DEB_HOST_ARCH=$$(dpkg-architecture -qDEB_HOST_ARCH); \
 		case "$$DEB_HOST_ARCH" in \
 			amd64) WHEEL_ARCH="x86_64" ;; \
