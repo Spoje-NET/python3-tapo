@@ -29,7 +29,9 @@ override_dh_auto_configure:
 		echo "Downloading tapo wheel from PyPI..."; \
 		python3 -m pip download --no-deps --only-binary=:all: tapo==$(TAPO_VERSION); \
 		echo "Extracting wheel contents..."; \
-		python3 -m wheel unpack tapo-$(TAPO_VERSION)-*.whl; \
+		WHEEL_FILE=$$(ls tapo-$(TAPO_VERSION)-*.whl | head -1); \
+		echo "Found wheel file: $$WHEEL_FILE"; \
+		python3 -m wheel unpack "$$WHEEL_FILE"; \
 		echo "Wheel extracted successfully"; \
 	fi
 
