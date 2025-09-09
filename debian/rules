@@ -31,7 +31,8 @@ override_dh_auto_configure:
 		echo "Extracting wheel contents..."; \
 		WHEEL_FILE=$$(ls tapo-$(TAPO_VERSION)-*.whl | head -1); \
 		echo "Found wheel file: $$WHEEL_FILE"; \
-		python3 -m wheel unpack "$$WHEEL_FILE"; \
+		mkdir -p tapo-$(TAPO_VERSION); \
+		cd tapo-$(TAPO_VERSION) && python3 -m zipfile -e "../$$WHEEL_FILE" .; \
 		echo "Wheel extracted successfully"; \
 	fi
 

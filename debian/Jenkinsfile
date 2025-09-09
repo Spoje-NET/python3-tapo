@@ -52,7 +52,7 @@ distributions.each {
             stage('Update Sources ' + distribution) {
                 buildImage.inside {
                     sh 'sudo apt-get update --allow-releaseinfo-change'
-                    sh 'sudo apt-get install -y python3-pip python3-wheel python3-setuptools curl jq'
+                    sh 'sudo apt-get install -y python3-pip python3-setuptools curl jq'
                     
                     // Get current version from PyPI
                     UPSTREAM_VERSION = sh(
@@ -74,8 +74,9 @@ distributions.each {
                         echo "Extracting wheel contents..."
                         WHEEL_FILE=\$(ls tapo-${UPSTREAM_VERSION}-*.whl | head -1)
                         echo "Found wheel file: \$WHEEL_FILE"
-                        python3 -m wheel unpack "\$WHEEL_FILE"
-                        ls -la tapo-${UPSTREAM_VERSION}/
+                        mkdir -p tapo-${UPSTREAM_VERSION}
+                        cd tapo-${UPSTREAM_VERSION} && python3 -m zipfile -e "../\$WHEEL_FILE" .
+                        cd .. && ls -la tapo-${UPSTREAM_VERSION}/
                     """.stripIndent()
                     
                     // Update debian/changelog

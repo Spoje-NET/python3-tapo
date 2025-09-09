@@ -7,8 +7,7 @@ Build-Depends: debhelper-compat (= 13),
                dh-python,
                python3-all,
                python3-setuptools,
-               python3-pip,
-               python3-wheel
+               python3-pip
 Standards-Version: 4.6.2
 Homepage: https://github.com/mihai-dinculescu/tapo
 Vcs-Git: https://github.com/mihai-dinculescu/tapo.git
