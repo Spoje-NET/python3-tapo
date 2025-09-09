@@ -1,0 +1,10 @@
+python3-tapo (0.8.4-1) unstable; urgency=medium
+
+  * Initial Debian package for Tapo Python API client
+  * Upstream version 0.8.4
+  * Unofficial Tapo API Client for TP-Link smart devices
+  * Support for light bulbs, light strips, smart plugs, power strips, 
+    hubs, switches, and sensors
+  * Rust-based implementation with Python bindings
+
+ -- Vitex Software <info@vitexsoftware.com>  Mon, 09 Sep 2025 17:30:00 +0200

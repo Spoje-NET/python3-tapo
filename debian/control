@@ -1,0 +1,35 @@
+Source: python3-tapo
+Section: python
+Priority: optional
+Maintainer: Vitex Software <info@vitexsoftware.com>
+Uploaders: Mihai Dinculescu <mihai.dinculescu@outlook.com>
+Build-Depends: debhelper-compat (= 13),
+               dh-python,
+               python3-all,
+               python3-setuptools
+Standards-Version: 4.6.2
+Homepage: https://github.com/mihai-dinculescu/tapo
+Vcs-Git: https://github.com/mihai-dinculescu/tapo.git
+Vcs-Browser: https://github.com/mihai-dinculescu/tapo
+Rules-Requires-Root: no
+
+Package: python3-tapo
+Architecture: any
+Depends: ${python3:Depends},
+         ${shlibs:Depends},
+         ${misc:Depends}
+Suggests: python3-doc
+Description: Unofficial Tapo API Client for TP-Link smart devices
+ Tapo is an unofficial API client for TP-Link Tapo smart devices.
+ It works with various smart devices including:
+ .
+  * Light bulbs (L510, L520, L530, L535, L610, L630)
+  * Light strips (L900, L920, L930)  
+  * Smart plugs (P100, P105, P110, P110M, P115)
+  * Power strips (P300, P304M, P316M)
+  * Hubs (H100)
+  * Switches (S200B)
+  * Sensors (KE100, T100, T110, T300, T310, T315)
+ .
+ This package provides the Python 3 bindings for the Tapo API client,
+ which is implemented in Rust for performance and reliability.

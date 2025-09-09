@@ -1,0 +1,39 @@
+# Build artifacts
+*.deb
+*.dsc
+*.changes
+*.buildinfo
+*.build
+*.upload
+
+# Build directories
+.pybuild/
+build/
+debian/.debhelper/
+debian/tmp/
+debian/python3-tapo/
+debian/files
+debian/*.substvars
+debian/*.debhelper.log
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# IDE and editor files
+.vscode/
+.idea/
+*~
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
